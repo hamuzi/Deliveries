@@ -27,6 +27,7 @@ function createDelivery(req, res){
     if (phoneNormalized.length < 9 || phoneNormalized.length > 10)
         return res.status(400).json({ err: "phone length need to be 9-10 digits."})
 
+    // appling the delivery detail
     const newDelivery = {
         id: Date.now().toString(),
         status: "CREATED",
@@ -34,7 +35,8 @@ function createDelivery(req, res){
         phone: phoneNormalized,
         address: addressS,
     };
-    return res.status(201).json(newDelivery);
+
+    return res.status(201).json(newDelivery); // return the delivery
 }
 
 module.exports = {createDelivery} ;
