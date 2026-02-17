@@ -6,6 +6,14 @@ router.post("/", deliveriesController.createDelivery);
 
 router.get("/", deliveriesController.getAll);
 
-router.patch("/:id/status", deliveriesController.updateDeliveryStatus);
+router.get("/available", deliveriesController.getAvailable);
+
+router.patch("/:id/status", deliveriesController.updateDeliveryStatus); 
+
+router.patch("/:id/assign", deliveriesController.assignDelivery);
+
+router.get("/drivers/:driverId/deliveries", deliveriesController.getByDriver);
+
+router.patch("/drivers/:driverId/deliveries/:id/status",deliveriesController.updateDriverDeliveryStatus);
 
 module.exports = router;
