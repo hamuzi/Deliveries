@@ -1,5 +1,5 @@
 const Delivery = require("../models/delivery");
-const AppError = require("./Apperror");
+const AppError = require("./appError");
 
 const STATUSES = {
   CREATED: "CREATED",

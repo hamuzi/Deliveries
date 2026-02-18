@@ -1,5 +1,5 @@
 const Delivery = require("../models/delivery");
-const deliveryService = require("../services/deliveryservice");
+const deliveryService = require("../services/deliveryService");
 
 const STATUSES = {
   CREATED: "CREATED",

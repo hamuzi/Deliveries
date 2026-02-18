@@ -1,19 +1,23 @@
 const express = require("express");
 const router = express.Router();
 const deliveriesController  = require("../controllers/deliveriesController");
+const {requireAuth} = require("../services/requireAuth");
+const Role = require("../services/roles");
 
-router.post("/", deliveriesController.createDelivery);
+router.use(requireAuth);
 
-router.get("/", deliveriesController.getAll);
+router.post("/",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.BUSINESS), deliveriesController.createDelivery);
 
-router.get("/available", deliveriesController.getAvailable);
+router.get("/",Role.requireAnyRole(Role.Roles.ADMIN), deliveriesController.getAll);
 
-router.patch("/:id/status", deliveriesController.updateDeliveryStatus); 
+router.get("/available",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.DRIVER), deliveriesController.getAvailable);
 
-router.patch("/:id/assign", deliveriesController.assignDelivery);
+router.patch("/:id/status",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.BUSINESS), deliveriesController.updateDeliveryStatus); 
 
-router.get("/drivers/:driverId/deliveries", deliveriesController.getByDriver);
+router.patch("/:id/assign",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.DRIVER), deliveriesController.assignDelivery);
 
-router.patch("/drivers/:driverId/deliveries/:id/status",deliveriesController.updateDriverDeliveryStatus);
+router.get("/drivers/:driverId/deliveries",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.DRIVER), deliveriesController.getByDriver);
+
+router.patch("/drivers/:driverId/deliveries/:id/status",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.DRIVER),deliveriesController.updateDriverDeliveryStatus);
 
 module.exports = router;

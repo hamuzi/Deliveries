@@ -1,6 +1,6 @@
 function getHealth(req,res) {
-    console.log("working");
-    res.json({ ok: false });
+    console.log("Healthy.");
+    res.json({ ok: true });
 }
 
 module.exports = { getHealth };
