@@ -21,10 +21,12 @@ const ALLOWED_TRANSITIONS = {
   [STATUSES.CANCELLED]: new Set([]),
 };
 
-async function updateStatus(id, nextStatus) {
-  const delivery = await Delivery.findById(id);
+async function updateStatus(id, nextStatus, user) {
+  const delivery = await Delivery.findById(id, user);
+  const groups = user.groups || [];
+
   if (!delivery) {
-    throw new AppError("Delivery not found", 404);
+    throw new AppError("Delivery not found OR different business", 404);
   }
 
   const validStatuses = Object.values(STATUSES);
@@ -37,29 +39,39 @@ async function updateStatus(id, nextStatus) {
     throw new AppError("Invalid status transition", 409);
   }
 
-  return await Delivery.updateStatus(id, nextStatus);
-}
+  const isAdmin = groups.includes("ADMIN");
+  const isBusiness = groups.includes("BUSINESS");
+  const isDriver = groups.includes("DRIVER");
 
-async function updateDriverStatus(id, driverId, nextStatus) {
-  const delivery = await Delivery.findByIdAndDriver(id, driverId);
-  if (!delivery) {
-    throw new AppError("Delivery not found or not assigned to this driver", 404);
-  }
-  
-  const validStatuses = Object.values(STATUSES);
-  if (!validStatuses.includes(nextStatus)) {
-    throw new AppError("Invalid status value", 400);
-  }
+  if (!isAdmin) {
+    if (isBusiness) {
+      if (!(delivery.status === STATUSES.CREATED &&
+          (nextStatus === STATUSES.READY_FOR_PICKUP ||
+            nextStatus === STATUSES.CANCELLED))) {
+        throw new AppError("Business cannot perform this transition", 403);
+      }
+    }
 
-  const allowed = ALLOWED_TRANSITIONS[delivery.status] || new Set();
-  if (!allowed.has(nextStatus)) {
-    throw new AppError("Invalid status transition", 409);
-  }
+    if (isDriver) {
+      if (nextStatus === STATUSES.CANCELLED) {
+        throw new AppError("Drivers cannot cancel deliveries", 403);
+      }
 
-  return await Delivery.updateStatus(id, nextStatus);
+      const driverAllowed = {
+        [STATUSES.ASSIGNED]: [STATUSES.PICKED_UP],
+        [STATUSES.PICKED_UP]: [STATUSES.ON_THE_WAY],
+        [STATUSES.ON_THE_WAY]: [STATUSES.DELIVERED],
+      };
+
+      const allowedNext = driverAllowed[delivery.status] || [];
+      if (!allowedNext.includes(nextStatus)) {
+        throw new AppError("Driver cannot perform this transition", 403);
+      }
+    }
+  }
+  return await Delivery.updateStatus(id, nextStatus, user);
 }
 
 module.exports = {
-    updateStatus,
-    updateDriverStatus
+    updateStatus
 };

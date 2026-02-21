@@ -1,8 +1,3 @@
-// controllers/authController.js
-
-// אם אתה על Node 18+ יש fetch מובנה.
-// אם לא, תתקין node-fetch ותעשה: const fetch = require("node-fetch");
-
 async function callback(req, res) {
   try {
     const code = req.query.code;

@@ -47,9 +47,9 @@ async function createDelivery(req, res){
     name: nameS,
     phone: phoneNormalized,
     address: addressS,
-});
+    }, req.user);   
 
-return res.status(201).json(created);
+    return res.status(201).json(created);
 }
 
 // update delivery status
@@ -63,7 +63,7 @@ async function updateDeliveryStatus(req, res, next) {
       return res.status(400).json({ error: "id must be a positive integer." });
     }
 
-    const updated = await deliveryService.updateStatus(idNum, nextStatus);
+    const updated = await deliveryService.updateStatus(idNum, nextStatus, req.user);
     return res.json(updated);
 
   } catch (error) {
@@ -73,7 +73,7 @@ async function updateDeliveryStatus(req, res, next) {
 
 // get all deliveries information
 async  function getAll(req, res) {
-    const deliveries = await Delivery.listAll();
+    const deliveries = await Delivery.listAll(req.user);
     res.json(deliveries);
 }
 
@@ -81,29 +81,15 @@ async  function getAll(req, res) {
 async function assignDelivery(req, res) {
     try{
         const { id } = req.params; // delivery id
-        const { driverId } = req.body; // driver id
 
         const idNum = Number(id); // convert string into int 
         if (!Number.isInteger(idNum) || idNum <= 0) {
             return res.status(400).json({ error: "id must be a positive integer." });
         }
 
-        const driverIdNum = Number(driverId);
-        if (!Number.isInteger(driverIdNum) || driverIdNum <= 0) {
-            return res.status(400).json({ error: "driverId must be a positive integer." });
-        }
-        
-        const delivery = await Delivery.findById(idNum);
-        if (!delivery) {
-            return res.status(404).json({ error: "this id is not exist." });
-        }
-        if (delivery.status !== STATUSES.READY_FOR_PICKUP) {
-            return res.status(409).json({error: "delivery must be READY_FOR_PICKUP to be assigned.",currentStatus: delivery.status,});
-        }
-
-        const updated = await Delivery.assignDriver(idNum, driverIdNum);
+        const updated = await Delivery.assignDriver(idNum, req.user);
         if (!updated) 
-            return res.status(404).json({ error: "this id is not exist." });
+            return res.status(404).json({ error: "no available orders (only for drivers)." });
         return res.json(updated);
     } catch (error) {
         console.error(error);
@@ -122,59 +108,10 @@ async function getAvailable(req, res) {
   }
 }
 
-// get some delivery by driver id
-async function getByDriver(req, res) {
-  try {
-    const { driverId } = req.params;
-    const driverIdNum = Number(driverId);
-
-    if (!Number.isInteger(driverIdNum) || driverIdNum <= 0) {
-      return res.status(400).json({
-        error: "driverId must be a positive integer."
-      });
-    }
-
-    const deliveries = await Delivery.findByDriver(driverIdNum);
-    return res.json(deliveries);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      error: "server error"
-    });
-  }
-}
-
-// update delivery status by id's from driver and delivery both
-async function updateDriverDeliveryStatus(req, res, next) {
-  try {
-    const { driverId, id } = req.params;
-    const { status: nextStatus } = req.body;
-
-    const driverIdNum = Number(driverId);
-    const idNum = Number(id);
-
-    if (!Number.isInteger(driverIdNum) || driverIdNum <= 0) {
-      return res.status(400).json({ error: "driverId must be a positive integer." });
-    }
-
-    if (!Number.isInteger(idNum) || idNum <= 0) {
-      return res.status(400).json({ error: "id must be a positive integer." });
-    }
-
-    const updated = await deliveryService.updateDriverStatus(idNum, driverIdNum, nextStatus);
-    return res.json(updated);
-
-  } catch (error) {
-    next(error);
-  }
-}
-
 module.exports = {
     createDelivery,
     updateDeliveryStatus,
     getAll,
     assignDelivery,
     getAvailable,
-    getByDriver,
-    updateDriverDeliveryStatus
 } ;
