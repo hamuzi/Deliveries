@@ -16,4 +16,6 @@ router.patch("/:id/status",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.BUSIN
 
 router.patch("/:id/assign",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.DRIVER), deliveriesController.assignDelivery);
 
+router.get("/:id/events",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.BUSINESS,Role.Roles.DRIVER), deliveriesController.getDeliveryEvents);
+
 module.exports = router;

@@ -1,5 +1,6 @@
 const Delivery = require("../models/delivery");
 const deliveryService = require("../services/deliveryService");
+const DeliveryEvent = require("../models/deliveryEvent");
 
 const STATUSES = {
   CREATED: "CREATED",
@@ -108,10 +109,34 @@ async function getAvailable(req, res) {
   }
 }
 
+async function getDeliveryEvents(req, res, next) {
+  try {
+    const deliveryId = Number(req.params.id);
+    if (Number.isNaN(deliveryId)) 
+        return res.status(400).json({ error: "Invalid delivery id" });
+
+    const delivery = await Delivery.findById(deliveryId, req.user);
+    if (!delivery) return res.status(404).json({ error: "Delivery not found" });
+
+    const { limit, cursor } = req.query;
+
+    const result = await DeliveryEvent.listByDeliveryId(deliveryId, { limit, cursor });
+
+    return res.json({
+      deliveryId,
+      events: result.events,
+      nextCursor: result.nextCursor
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
     createDelivery,
     updateDeliveryStatus,
     getAll,
     assignDelivery,
     getAvailable,
+    getDeliveryEvents
 } ;

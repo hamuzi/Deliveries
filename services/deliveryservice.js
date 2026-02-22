@@ -1,5 +1,6 @@
 const Delivery = require("../models/delivery");
 const AppError = require("./appError");
+const DeliveryEvent = require("../models/deliveryEvent");
 
 const STATUSES = {
   CREATED: "CREATED",
