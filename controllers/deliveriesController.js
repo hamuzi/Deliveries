@@ -78,6 +78,25 @@ async  function getAll(req, res) {
     res.json(deliveries);
 }
 
+// get all deliveries by search filters and cursor
+async function getAllByFilters(req, res, next) {
+  try {
+    const { limit, cursor, status, search, from, to } = req.query;
+
+    const result = await Delivery.listBySearch(req.user, {
+      limit,
+      cursor,
+      status,
+      search,
+      from,
+      to});
+
+    return res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 // assign delivery to driver
 async function assignDelivery(req, res) {
     try{
@@ -138,5 +157,6 @@ module.exports = {
     getAll,
     assignDelivery,
     getAvailable,
-    getDeliveryEvents
+    getDeliveryEvents,
+    getAllByFilters
 } ;

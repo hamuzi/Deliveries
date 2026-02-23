@@ -8,7 +8,9 @@ router.use(requireAuth);
 
 router.post("/",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.BUSINESS), deliveriesController.createDelivery);
 
-router.get("/",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.BUSINESS,Role.Roles.DRIVER), deliveriesController.getAll);
+//router.get("/",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.BUSINESS,Role.Roles.DRIVER), deliveriesController.getAll);
+
+router.get("/",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.BUSINESS,Role.Roles.DRIVER), deliveriesController.getAllByFilters);
 
 router.get("/available",Role.requireAnyRole(Role.Roles.ADMIN,Role.Roles.DRIVER), deliveriesController.getAvailable);
 

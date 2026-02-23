@@ -157,6 +157,89 @@ class Delivery{
         return [];
     }
 
+    // get list deliveries by filters and cursor
+    static async listBySearch(user, { limit = 20, cursor = null, status, search, from, to } = {}) {
+        const groups = user.groups || [];
+        const isAdmin = groups.includes("ADMIN");
+        const isBusiness = groups.includes("BUSINESS");
+        const isDriver = groups.includes("DRIVER");
+
+        //  permission
+        if (!(isAdmin || isBusiness || isDriver)) {
+            return { deliveries: [], nextCursor: null };
+        }
+        
+        // create or update cursor
+        let cursorCreatedAt = null;
+        let cursorId = null;
+        if (cursor) {
+            const [ts, idStr] = String(cursor).split("|");
+            if (ts && idStr) {
+            cursorCreatedAt = ts;
+            cursorId = Number(idStr);
+            if (Number.isNaN(cursorId)) cursorId = null;
+            }
+        }
+
+        const values = [];
+        const parts = [`SELECT id, name, phone, address, status, business_id, driver_id, created_at, updated_at
+            FROM deliveries
+            WHERE 1=1`.trim()];
+
+        // check the owner for specific data 
+        if (isBusiness) {
+            values.push(user.sub);
+            parts.push(`AND business_id = $${values.length}`);
+        } 
+        else if (isDriver) {
+            values.push(user.sub);
+            parts.push(`AND driver_id = $${values.length}`);
+        }
+
+        // search filter - future design
+        if (status) {
+            values.push(status);
+            parts.push(`AND status = $${values.length}`);
+        }
+        if (from) {
+            values.push(from);
+            parts.push(`AND created_at >= $${values.length}::timestamptz`);
+        }
+        if (to) {
+            values.push(to);
+            parts.push(`AND created_at <= $${values.length}::timestamptz`);
+        }
+        if (search) {
+            values.push(`%${search}%`);
+            const idx = values.length;
+            parts.push(`
+            AND (
+                name ILIKE $${idx}
+                OR phone ILIKE $${idx}
+                OR address ILIKE $${idx})`.trim());
+        }
+
+        if (cursorCreatedAt && cursorId) {
+            values.push(cursorCreatedAt, cursorId);
+            parts.push(
+            `AND (created_at, id) < ($${values.length - 1}::timestamptz, $${values.length}::bigint)`
+            );
+        }
+
+        const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+        parts.push(`ORDER BY created_at DESC, id DESC`);
+        values.push(safeLimit);
+        parts.push(`LIMIT $${values.length}`);
+
+        const query = parts.join("\n");
+        const result = await pool.query(query, values);
+        const rows = result.rows;
+        const last = rows[rows.length - 1];
+        const nextCursor = last ? `${new Date(last.created_at).toISOString()}|${last.id}` : null;
+
+        return { deliveries: rows, nextCursor };
+}
+
     // assign driver to delivery by id's to DB and log events
     static async assignDriver(id, user) {
         const groups = user.groups || [];
@@ -224,7 +307,7 @@ class Delivery{
         FROM deliveries
         WHERE status = 'READY_FOR_PICKUP'
         ORDER BY created_at ASC;
-    `;
+        LIMIT 200;`;
 
         const result = await pool.query(query);
         return result.rows;
